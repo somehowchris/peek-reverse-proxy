@@ -1,6 +1,6 @@
 [package]
 name = "peek-reverse-proxy"
-version = "0.0.2"
+version = "0.1.0"
 edition = "2021"
 description = "A simple reverse proxy to peek into requests"
 license = "MIT"
