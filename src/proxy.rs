@@ -2,10 +2,16 @@ use hyper::Body;
 use hyper::Request;
 use hyper::Response;
 use hyper::StatusCode;
+use hyper_reverse_proxy::ProxyError::{HyperError, InvalidUri};
 use std::collections::HashMap;
 use std::convert::Infallible;
 use std::net::IpAddr;
 use std::str;
+
+#[derive(serde::Deserialize, serde::Serialize)]
+struct Message {
+    message: String,
+}
 
 #[inline]
 pub async fn handle(
@@ -80,13 +86,6 @@ pub async fn handle(
             str::from_utf8(body.as_ref()).unwrap(),
         );
     }
-
-    #[derive(serde::Deserialize, serde::Serialize)]
-    struct Message {
-        message: String,
-    }
-
-    use hyper_reverse_proxy::ProxyError::{HyperError, InvalidUri};
 
     match hyper_reverse_proxy::call(client_ip, &destination, req).await {
         Ok(response) => Ok(response),

@@ -14,6 +14,9 @@ use url::Url;
 mod logging;
 mod proxy;
 
+/// Validates the given url
+///
+/// Used to validated the destination url
 fn validate_uri(url: &str) -> Result<Url, &str> {
     let parsed_url = url.parse::<Url>();
     if let Ok(url) = parsed_url {
@@ -23,6 +26,9 @@ fn validate_uri(url: &str) -> Result<Url, &str> {
     }
 }
 
+/// Validates the given host address
+///
+/// Used to validated the host address to host listen on
 fn validate_address(address: &str) -> Result<SocketAddr, &str> {
     let parsed_address = address.parse::<SocketAddr>();
     if let Ok(address) = parsed_address {
@@ -48,7 +54,6 @@ async fn main() {
                 if let Ok(destination_str) = std::env::var("DESTINATION_URL") {
                     match validate_uri(&destination_str) {
                         Ok(_url) => {
-                            
                             // Setup proxy
                             let pretty_svc = make_service_fn(|conn: &AddrStream| {
                                 let remote_addr = conn.remote_addr().ip();

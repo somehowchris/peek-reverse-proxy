@@ -2,6 +2,7 @@ use tracing_log::LogTracer;
 use tracing_subscriber::field::MakeExt;
 
 use tracing_subscriber::registry::LookupSpan;
+use tracing_subscriber::EnvFilter;
 use tracing_subscriber::Layer;
 
 #[derive(PartialEq, Clone)]
@@ -56,6 +57,7 @@ impl From<&str> for LogLevel {
     }
 }
 
+/// Default layer formatting output
 pub fn default_logging_layer<S>() -> impl Layer<S>
 where
     S: tracing::Subscriber,
@@ -74,14 +76,10 @@ where
 
     tracing_subscriber::fmt::layer()
         .fmt_fields(field_format)
-        // Configure the formatter to use `print!` rather than
-        // `stdout().write_str(...)`, so that logs are captured by libtest's test
-        // capturing.
         .with_test_writer()
 }
 
-use tracing_subscriber::EnvFilter;
-
+/// Filter installed to filter messages down to a given log level
 pub fn filter_layer(level: LogLevel) -> EnvFilter {
     let filter_str = match level {
         LogLevel::Critical => "warn,hyper=off,rustls=off",
@@ -93,17 +91,16 @@ pub fn filter_layer(level: LogLevel) -> EnvFilter {
     tracing_subscriber::filter::EnvFilter::try_new(filter_str).expect("filter string must parse")
 }
 
+/// Logging layer to format the log output as json
 pub fn json_logging_layer<
     S: for<'a> tracing_subscriber::registry::LookupSpan<'a> + tracing::Subscriber,
 >() -> impl tracing_subscriber::Layer<S> {
-    tracing_subscriber::fmt::layer()
-        .json()
-        // Configure the formatter to use `print!` rather than
-        // `stdout().write_str(...)`, so that logs are captured by libtest's test
-        // capturing.
-        .with_test_writer()
+    tracing_subscriber::fmt::layer().json().with_test_writer()
 }
 
+/// Setup logging for this application
+///
+/// Uses tracing logs
 pub fn setup_logging() -> (PrintStyle, LogLevel) {
     use tracing_subscriber::prelude::*;
 

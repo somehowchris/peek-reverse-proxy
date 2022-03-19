@@ -16,7 +16,7 @@ If you've mocked an API just to look at the request sent fear no more. This clie
 ### From Source
 
 ## TODO
- - [ ] Docs
+ - [x] In-Code Docs
  - [ ] Readme
  - [ ] CI/CD
  - [ ] Publish
