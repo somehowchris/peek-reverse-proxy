@@ -11,12 +11,52 @@ If you've mocked an API just to look at the request sent fear no more. This clie
 
 ## Usage
 
-### Cargo
+### Install
 
-### From Source
+ATM you can install this crate as a cli via `cargo` or compile it form source.
 
-## TODO
- - [x] In-Code Docs
- - [ ] Readme
- - [ ] CI/CD
- - [ ] Publish
+#### Cargo
+
+To install this crate via `cargo` do the following:
+```sh
+cargo install peek-reverse-proxy
+```
+
+#### From Source
+
+```
+git clone https://github.com/somehowchris/peek-reverse-proxy.git
+
+cd peek-reverse-proxy
+
+cargo install --path .
+```
+
+### Run it
+
+Once installed, you can run it via:
+```sh
+peek-reverse-proxy
+```
+
+#### Configuration
+
+Env variables allow you to configure things to your needs:
+- `HOST_ADDRESS`: address on which to listen on i.e. `0.0.0.0:8080`
+- `DESTINATION_URL`: destination url including host and scheme i.e. `https://www.google.com`
+- (optional) `LOG_LEVEL`: level of logs to log __off__, __debug__, __normal__, __critical__, defaults to `normal`
+- (optional) `PRINT_STYLE`: print style for logs, either __json__ (outputs everything in json style), __plain__ (outputs everything in standard log formats but has no json field formatting), __pretty__ (just as plain, but formats outputs of json fields with serde_jsons pretty option), defaults to `pretty`
+
+
+For example:
+
+```sh
+export HOST_ADDRESS="0.0.0.0:8080"
+export DESTINATION_URL="https://www.google.com"
+export PRINT_STYLE="json"
+export LOG_LEVEL="normal"
+
+peek-reverse-proxy
+```
+
+
