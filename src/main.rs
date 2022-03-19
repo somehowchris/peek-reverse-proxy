@@ -1,57 +1,18 @@
-use env_logger::Env;
+#[macro_use]
+extern crate tracing;
+
 use hyper::server::conn::AddrStream;
 use hyper::service::{make_service_fn, service_fn};
-use hyper::{Body, Request, Response, Server, StatusCode};
-use log::{error, info};
-use std::collections::HashMap;
+use hyper::Server;
+
 use std::convert::Infallible;
-use std::net::{IpAddr, SocketAddr};
+use std::net::SocketAddr;
 use std::str;
+
 use url::Url;
 
-async fn handle(
-    client_ip: IpAddr,
-    mut req: Request<Body>,
-    destination: String,
-) -> Result<Response<Body>, Infallible> {
-    let mut query = HashMap::new();
-
-    for item in req.uri().query().unwrap_or("").split("&") {
-        let kv = item.split("=").map(|el| el.to_owned()).collect::<Vec<_>>();
-        query.insert(
-            kv.get(0).map(|el| el.to_owned()).unwrap(),
-            kv.get(1).map(|el| el.to_owned()).unwrap(),
-        );
-    }
-
-    let body = hyper::body::to_bytes(&mut req.body_mut()).await.unwrap();
-
-    info!(
-        "Path: {}
-        Query: {:?}
-        Method: {}
-        Version: {:?}
-        Headers: {:?}
-        Body: {}",
-        req.uri().path(),
-        query,
-        req.method(),
-        req.version(),
-        req.headers(),
-        str::from_utf8(body.as_ref()).unwrap(),
-    );
-
-    match hyper_reverse_proxy::call(client_ip, &destination, req).await {
-        Ok(response) => Ok(response),
-        Err(_error) => {
-            error!("{:?}", _error);
-            Ok(Response::builder()
-                .status(StatusCode::INTERNAL_SERVER_ERROR)
-                .body(Body::empty())
-                .unwrap())
-        }
-    }
-}
+mod logging;
+mod proxy;
 
 fn validate_uri(url: &str) -> Result<Url, &str> {
     let parsed_url = url.parse::<Url>();
@@ -77,8 +38,7 @@ fn validate_address(address: &str) -> Result<SocketAddr, &str> {
 
 #[tokio::main]
 async fn main() {
-    // Setup logger
-    env_logger::Builder::from_env(Env::default().default_filter_or("info")).init();
+    let (style, _log_level) = logging::setup_logging();
 
     // validate local address setup
     if let Ok(address_str) = std::env::var("HOST_ADDRESS") {
@@ -88,27 +48,55 @@ async fn main() {
                 if let Ok(destination_str) = std::env::var("DESTINATION_URL") {
                     match validate_uri(&destination_str) {
                         Ok(_url) => {
+                            
                             // Setup proxy
-                            let make_svc = make_service_fn(|conn: &AddrStream| {
+                            let pretty_svc = make_service_fn(|conn: &AddrStream| {
                                 let remote_addr = conn.remote_addr().ip();
+                                let print_style = style.clone();
                                 async move {
                                     Ok::<_, Infallible>(service_fn(move |req| {
-                                        handle(
+                                        proxy::handle(
                                             remote_addr,
                                             req,
                                             std::env::var("DESTINATION_URL").unwrap(),
+                                            print_style == logging::PrintStyle::Json,
+                                            print_style == logging::PrintStyle::Pretty,
                                         )
                                     }))
                                 }
                             });
 
-                            let server = Server::bind(&socket_addr).serve(make_svc);
+                            let plain_svc = make_service_fn(|conn: &AddrStream| {
+                                let remote_addr = conn.remote_addr().ip();
+                                let print_style = style.clone();
+                                async move {
+                                    Ok::<_, Infallible>(service_fn(move |req| {
+                                        proxy::handle(
+                                            remote_addr,
+                                            req,
+                                            std::env::var("DESTINATION_URL").unwrap(),
+                                            print_style == logging::PrintStyle::Json,
+                                            print_style == logging::PrintStyle::Pretty,
+                                        )
+                                    }))
+                                }
+                            });
 
                             info!("Running server on {:?}", socket_addr);
 
                             // Run proxy
-                            if let Err(e) = server.await {
-                                error!("server error: {}", e);
+                            if style == logging::PrintStyle::Pretty {
+                                let server = Server::bind(&socket_addr).serve(pretty_svc);
+
+                                if let Err(e) = server.await {
+                                    error!("server error: {}", e);
+                                }
+                            } else {
+                                let server = Server::bind(&socket_addr).serve(plain_svc);
+
+                                if let Err(e) = server.await {
+                                    error!("server error: {}", e);
+                                }
                             }
                         }
                         Err(message) => {
