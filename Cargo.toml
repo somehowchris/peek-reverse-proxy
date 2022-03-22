@@ -11,7 +11,7 @@ repository = "https://github.com/somehowchris/peek-reverse-proxy"
 
 [dependencies]
 hyper-reverse-proxy = "0.5.1"
-hyper = { version = "0.14.17", features = ["full"] }
+hyper = { version = "0.14.18", features = ["full"] }
 tokio = { version = "1.17.0", features = ["full"] }
 url = "2.2.2"
 tracing = "0.1.32"
