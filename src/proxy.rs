@@ -60,8 +60,13 @@ pub async fn handle(
         format!("{:?}", req.headers())
     };
 
+    let x_request_id_header = hyper::header::HeaderName::from_static("x-request-id");
+
+    let request_id = if req.headers().contains_key(&x_request_id_header) {req.headers().get(&x_request_id_header).unwrap().to_str().unwrap().to_string()} else {uuid::Uuid::new_v4().to_string()};
+
     if format_log_as_json {
-        info!("{{\"path\": \"{}\", \"query\": {}, \"method\": \"{}\", \"version\": \"{:?}\", \"headers\": {}, \"body\": {}}}",
+        info!("{{\"type\":\"request\"\"requestId\":\"{}\",\"path\": \"{}\", \"query\": {}, \"method\": \"{}\", \"version\": \"{:?}\", \"headers\": {}, \"body\": {}}}",
+            request_id,
             req.uri().path(),
             query_output,
             req.method(),
@@ -72,23 +77,69 @@ pub async fn handle(
     } else {
         info!(
             "
+            -----------------
+            RequestId: {}
             Path: {}
             Query: {:?}
             Method: {}
             Version: {:?}
             Headers: {:?}
-            Body: {}",
+            Body: {}
+            -----------------",
+            request_id,
             req.uri().path(),
             query,
             req.method(),
             req.version(),
-            req.headers(),
-            str::from_utf8(body.as_ref()).unwrap(),
+            headers_output,
+            body_output,
         );
     }
 
     match hyper_reverse_proxy::call(client_ip, &destination, req).await {
-        Ok(response) => Ok(response),
+        Ok(mut response) => {
+            let body = hyper::body::to_bytes(&mut response.body_mut()).await.unwrap();
+
+            let body_output = if pretty_json_fields {
+                if let Ok(body_value) =
+                    serde_json::from_str::<serde_json::Value>(str::from_utf8(body.as_ref()).unwrap())
+                {
+                    serde_json::to_string_pretty(&body_value).unwrap()
+                } else {
+                    str::from_utf8(body.as_ref()).unwrap().to_string()
+                }
+            } else {
+                str::from_utf8(body.as_ref()).unwrap().to_string()
+            };
+
+            let headers_output = if pretty_json_fields {
+                serde_json::to_string_pretty(&format!("{:?}", &response.headers())).unwrap()
+            } else {
+                format!("{:?}", response.headers())
+            };
+
+            if format_log_as_json {
+                info!("{{\"type\":\"response\"\"requestId\":\"{}\", \"headers\": {}, \"body\": {}}}",
+                    request_id,
+                    headers_output,
+                    body_output,
+                );
+            } else {
+                info!(
+                    "
+                    -----------------
+                    RequestId: {}
+                    Headers: {:?}
+                    Body: {}
+                    -----------------",
+                    request_id,
+                    headers_output,
+                    body_output,
+                );
+            }
+
+            Ok(response)
+        },
         Err(HyperError(err)) => {
             error!("{:?}", err);
             Ok(Response::builder()
