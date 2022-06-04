@@ -47,83 +47,96 @@ fn validate_address(address: &str) -> Result<SocketAddr, &str> {
 
 #[tokio::main]
 async fn main() {
-    let (style, _log_level) = logging::setup_logging();
+    let proxy = tokio::spawn(async {
+        let (style, _log_level) = logging::setup_logging();
 
-    // validate local address setup
-    if let Ok(address_str) = std::env::var("HOST_ADDRESS") {
-        match validate_address(&address_str) {
-            Ok(socket_addr) => {
-                // validate destination
-                if let Ok(destination_str) = std::env::var("DESTINATION_URL") {
-                    match validate_uri(&destination_str) {
-                        Ok(_url) => {
-                            // Setup proxy
-                            let pretty_svc = make_service_fn(|conn: &AddrStream| {
-                                let remote_addr = conn.remote_addr().ip();
-                                let print_style = style.clone();
-                                async move {
-                                    Ok::<_, Infallible>(service_fn(move |req| {
-                                        proxy::handle(
-                                            remote_addr,
-                                            req,
-                                            std::env::var("DESTINATION_URL").unwrap(),
-                                            print_style == logging::PrintStyle::Json,
-                                            print_style == logging::PrintStyle::Pretty,
-                                        )
-                                    }))
-                                }
-                            });
+        // validate local address setup
+        if let Ok(address_str) = std::env::var("HOST_ADDRESS") {
+            match validate_address(&address_str) {
+                Ok(socket_addr) => {
+                    // validate destination
+                    if let Ok(destination_str) = std::env::var("DESTINATION_URL") {
+                        match validate_uri(&destination_str) {
+                            Ok(_url) => {
+                                // Setup proxy
+                                let pretty_svc = make_service_fn(|conn: &AddrStream| {
+                                    let remote_addr = conn.remote_addr().ip();
+                                    let print_style = style.clone();
+                                    async move {
+                                        Ok::<_, Infallible>(service_fn(move |req| {
+                                            proxy::handle(
+                                                remote_addr,
+                                                req,
+                                                std::env::var("DESTINATION_URL").unwrap(),
+                                                print_style == logging::PrintStyle::Json,
+                                                print_style == logging::PrintStyle::Pretty,
+                                            )
+                                        }))
+                                    }
+                                });
 
-                            let plain_svc = make_service_fn(|conn: &AddrStream| {
-                                let remote_addr = conn.remote_addr().ip();
-                                let print_style = style.clone();
-                                async move {
-                                    Ok::<_, Infallible>(service_fn(move |req| {
-                                        proxy::handle(
-                                            remote_addr,
-                                            req,
-                                            std::env::var("DESTINATION_URL").unwrap(),
-                                            print_style == logging::PrintStyle::Json,
-                                            print_style == logging::PrintStyle::Pretty,
-                                        )
-                                    }))
-                                }
-                            });
+                                let plain_svc = make_service_fn(|conn: &AddrStream| {
+                                    let remote_addr = conn.remote_addr().ip();
+                                    let print_style = style.clone();
+                                    async move {
+                                        Ok::<_, Infallible>(service_fn(move |req| {
+                                            proxy::handle(
+                                                remote_addr,
+                                                req,
+                                                std::env::var("DESTINATION_URL").unwrap(),
+                                                print_style == logging::PrintStyle::Json,
+                                                print_style == logging::PrintStyle::Pretty,
+                                            )
+                                        }))
+                                    }
+                                });
 
-                            info!("Running server on {:?}", socket_addr);
+                                info!("Running server on {:?}", socket_addr);
 
-                            // Run proxy
-                            if style == logging::PrintStyle::Pretty {
-                                let server = Server::bind(&socket_addr).serve(pretty_svc);
+                                // Run proxy
+                                if style == logging::PrintStyle::Pretty {
+                                    let server = Server::bind(&socket_addr).serve(pretty_svc);
 
-                                if let Err(e) = server.await {
-                                    error!("server error: {}", e);
-                                }
-                            } else {
-                                let server = Server::bind(&socket_addr).serve(plain_svc);
+                                    if let Err(e) = server.await {
+                                        error!("server error: {}", e);
+                                    }
+                                } else {
+                                    let server = Server::bind(&socket_addr).serve(plain_svc);
 
-                                if let Err(e) = server.await {
-                                    error!("server error: {}", e);
+                                    if let Err(e) = server.await {
+                                        error!("server error: {}", e);
+                                    }
                                 }
                             }
+                            Err(message) => {
+                                error!("{}", message);
+                                std::process::exit(1);
+                            }
                         }
-                        Err(message) => {
-                            error!("{}", message);
-                            std::process::exit(1);
-                        }
+                    } else {
+                        error!("Environment variable 'DESTINATION_URL' needs to be defined");
+                        std::process::exit(1);
                     }
-                } else {
-                    error!("Environment variable 'DESTINATION_URL' needs to be defined");
+                }
+                Err(message) => {
+                    error!("{}", message);
                     std::process::exit(1);
                 }
             }
-            Err(message) => {
-                error!("{}", message);
-                std::process::exit(1);
-            }
+        } else {
+            error!("Environment variable 'HOST_ADDRESS' needs to be defined");
+            std::process::exit(1);
         }
-    } else {
-        error!("Environment variable 'HOST_ADDRESS' needs to be defined");
-        std::process::exit(1);
+    });
+
+    let ctrlc = tokio::spawn(async {
+        tokio::signal::ctrl_c().await.unwrap();
+    });
+
+    tokio::select! {
+        _ = proxy => {},
+        _ = ctrlc => {
+            info!("Received shutdown signal");
+        }
     }
 }

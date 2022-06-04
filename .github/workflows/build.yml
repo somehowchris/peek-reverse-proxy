@@ -101,3 +101,23 @@ jobs:
       
       - name: Build Release
         run: cross build --target ${{ matrix.config.arch }} --all-features --release --workspace  --all-targets
+  
+  container:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository and submodules
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+      - name: Install qemu dependency
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y qemu-user-static
+
+      - name: Buildah Action
+        uses: redhat-actions/buildah-build@v2
+        with:
+          containerfiles: |
+            Containerfile
+          platforms: linux/amd64,linux/arm64
+          image: ci
