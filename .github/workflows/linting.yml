@@ -31,18 +31,3 @@ jobs:
 
       - name: Run check
         run: cargo check
-
-  release-dry-run:
-    name: Release dry run
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Setup Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-
-      - uses: katyo/publish-crates@v1
-        with:
-            dry-run: true
