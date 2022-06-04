@@ -60,9 +60,9 @@ pub async fn handle(
         }
 
         let body_output = if pretty_json_fields {
-            if let Ok(body_value) = serde_json::from_str::<serde_json::Value>(
-                str::from_utf8(&*body_clone).unwrap(),
-            ) {
+            if let Ok(body_value) =
+                serde_json::from_str::<serde_json::Value>(str::from_utf8(&*body_clone).unwrap())
+            {
                 serde_json::to_string_pretty(&body_value).unwrap()
             } else {
                 str::from_utf8(&*body_clone).unwrap().to_string()
