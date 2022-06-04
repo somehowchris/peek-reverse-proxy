@@ -8,25 +8,29 @@ env:
   CROSS_CONTAINER_ENGINE: podman
   
 jobs:
-  release:
+  crates-io:
     runs-on: ubuntu-latest
+    permissions:
+      deployments: write
     steps:
         - uses: actions/checkout@v3
-        - uses: chrnorm/deployment-action@releases/v1
+
+        - uses: chrnorm/deployment-action@v2
           name: Create GitHub deployment
           id: deployment
           with:
             token: "${{ github.token }}"
-            target_url: https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
+            log-url: https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
             environment: crates.io
 
-        - name: Update deployment status (pending)
-          uses: chrnorm/deployment-status@releases/v1
+        - name: Update deployment status (in_progress)
+          if: success()
+          uses: chrnorm/deployment-status@v2
           with:
-            token: "${{ github.token }}"
-            target_url: https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
-            state: "pending"
-            deployment_id: ${{ steps.deployment.outputs.deployment_id }}
+            token: '${{ github.token }}'
+            environment-url: ${{ steps.deployment.outputs.environment_url }}
+            deployment-id: ${{ steps.deployment.outputs.deployment_id }}
+            state: 'in_progress'
             
         - uses: actions-rs/toolchain@v1
           with:
@@ -39,18 +43,115 @@ jobs:
               
         - name: Update deployment status (success)
           if: success()
-          uses: chrnorm/deployment-status@releases/v1
+          uses: chrnorm/deployment-status@v2
           with:
-            token: "${{ github.token }}"
-            target_url: https://crates.io/crates/cf-env
-            state: "success"
-            deployment_id: ${{ steps.deployment.outputs.deployment_id }}
+            token: '${{ github.token }}'
+            environment-url: ${{ steps.deployment.outputs.environment_url }}
+            deployment-id: ${{ steps.deployment.outputs.deployment_id }}
+            state: 'success'
 
         - name: Update deployment status (failure)
           if: failure()
-          uses: chrnorm/deployment-status@releases/v1
+          uses: chrnorm/deployment-status@v2
+          with:
+            token: '${{ github.token }}'
+            environment-url: ${{ steps.deployment.outputs.environment_url }}
+            deployment-id: ${{ steps.deployment.outputs.deployment_id }}
+            state: 'failure'
+
+  ghcr:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      # This is used to complete the identity challenge
+      # with sigstore/fulcio when running outside of PRs.
+      id-token: write
+      deployments: write
+    steps:
+        - uses: actions/checkout@v3
+        - name: Process version of the tag
+          id: version
+          uses: ncipollo/semantic-version-action@v1
+        - uses: chrnorm/deployment-action@v2
+          name: Create GitHub deployment
+          id: deployment
           with:
             token: "${{ github.token }}"
-            target_url: https://crates.io/crates/cf-env
-            state: "failure"
-            deployment_id: ${{ steps.deployment.outputs.deployment_id }}
+            log-url: https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
+            environment: ghcr
+        
+        # Install the cosign tool except on PR
+        # https://github.com/sigstore/cosign-installer
+        - name: Install cosign
+          uses: sigstore/cosign-installer@3d3d32a83e307c72740f6095be918624b57e65fa
+
+        - name: Install qemu dependency
+          run: |
+            sudo apt-get update
+            sudo apt-get install -y qemu-user-static
+
+        # Login against a container registry
+        - name: Log into registry ghcr.io
+          uses: redhat-actions/podman-login@v1
+          with:
+            registry: ghcr.io
+            username: ${{ github.actor }}
+            password: ${{ github.token }}
+
+        - name: Update deployment status (in_progress)
+          if: success()
+          uses: chrnorm/deployment-status@v2
+          with:
+            token: '${{ github.token }}'
+            environment-url: ${{ steps.deployment.outputs.environment_url }}
+            deployment-id: ${{ steps.deployment.outputs.deployment_id }}
+            state: 'in_progress'
+        - name: Buildah Action
+          id: build-image
+          uses: redhat-actions/buildah-build@v2
+          with:
+            containerfiles: |
+              Containerfile
+            platforms: linux/amd64,linux/arm64
+            image: ghcr.io/${{ github.repository }}
+            tags: ${{ steps.version.outputs.tag }}
+
+        - name: Push container image
+          id: push-container-image
+          uses: redhat-actions/push-to-registry@v2
+          with:
+            image: ${{ steps.build-image.outputs.image }}
+            tags: ${{ steps.build-image.outputs.tags }}
+            registry: ghcr.io
+            username: ${{ github.actor }}
+            password: ${{ github.token }}
+          # Sign the resulting Docker image digest except on PRs.
+          # This will only write to the public Rekor transparency log when the Docker
+          # repository is public to avoid leaking data.  If you would like to publish
+          # transparency data even for private images, pass --force to cosign below.
+          # https://github.com/sigstore/cosign
+        - name: Sign the published Docker image
+          env:
+            COSIGN_EXPERIMENTAL: "true"
+          # This step uses the identity token to provision an ephemeral certificate
+          # against the sigstore community Fulcio instance.
+          run: cosign sign ghcr.io/${{ github.repository }}@${{ steps.push-container-image.outputs.digest }}
+
+        - name: Update deployment status (success)
+          if: success()
+          uses: chrnorm/deployment-status@v2
+          with:
+            token: '${{ github.token }}'
+            environment-url: ${{ steps.deployment.outputs.environment_url }}
+            deployment-id: ${{ steps.deployment.outputs.deployment_id }}
+            state: 'success'
+
+        - name: Update deployment status (failure)
+          if: failure()
+          uses: chrnorm/deployment-status@v2
+          with:
+            token: '${{ github.token }}'
+            environment-url: ${{ steps.deployment.outputs.environment_url }}
+            deployment-id: ${{ steps.deployment.outputs.deployment_id }}
+            state: 'failure'
