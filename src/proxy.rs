@@ -119,19 +119,22 @@ Body: {}
     {
         Ok(response) => {
             let mut response_parts = response.into_parts();
-            let body = hyper::body::to_bytes(&mut response_parts.1).await.unwrap();
-
-            let body_output = if pretty_json_fields {
-                if let Ok(body_value) = serde_json::from_str::<serde_json::Value>(
-                    str::from_utf8(body.as_ref()).unwrap(),
-                ) {
-                    serde_json::to_string_pretty(&body_value).unwrap()
+            let (body_output, body) =
+                if let Ok(body) = hyper::body::to_bytes(&mut response_parts.1).await {
+                    if pretty_json_fields {
+                        if let Ok(body_value) = serde_json::from_str::<serde_json::Value>(
+                            str::from_utf8(body.as_ref()).unwrap(),
+                        ) {
+                            (serde_json::to_string_pretty(&body_value).unwrap(), body)
+                        } else {
+                            (str::from_utf8(body.as_ref()).unwrap().to_string(), body)
+                        }
+                    } else {
+                        (str::from_utf8(body.as_ref()).unwrap().to_string(), body)
+                    }
                 } else {
-                    str::from_utf8(body.as_ref()).unwrap().to_string()
-                }
-            } else {
-                str::from_utf8(body.as_ref()).unwrap().to_string()
-            };
+                    ("".to_string(), ([].as_slice() as &[u8]).into())
+                };
 
             let headers_output = if pretty_json_fields {
                 serde_json::to_string_pretty(&format!("{:?}", &response_parts.0.headers)).unwrap()
