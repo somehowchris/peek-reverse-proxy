@@ -39,3 +39,7 @@ codegen-units = 1
 [profile.release.package."*"]
 codegen-units = 1
 opt-level = 3
+
+[package.metadata.binstall]
+pkg-url = "{ repo }/releases/download/{ version }/{ name }-{ target }.txz"
+bin-dir = "{ bin }{ binary-ext }"

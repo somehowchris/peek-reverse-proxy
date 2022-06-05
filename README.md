@@ -13,7 +13,12 @@ If you've mocked an API just to look at the request sent fear no more. This clie
 
 ### Install
 
-ATM you can install this crate as a cli via `cargo` or compile it form source.
+You can use this crate via several distributions:
+ - `cargo install` via crates.io
+ - `cargo install` from source
+ - `docker`, `podman` or any OCI container runtime
+ - `cargo binstall`
+ - binaries from gh releases
 
 #### Cargo
 
