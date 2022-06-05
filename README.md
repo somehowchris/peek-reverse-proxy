@@ -20,9 +20,16 @@ You can use this crate via several distributions:
  - `cargo binstall`
  - binaries from gh releases
 
+#### Cargo binstall
+
+To install this crate via `cargo-binstall`:
+```sh
+cargo binstall peek-reverse-proxy
+```
+
 #### Cargo
 
-To install this crate via `cargo` do the following:
+To install this crate via `cargo`:
 ```sh
 cargo install peek-reverse-proxy
 ```
@@ -37,14 +44,22 @@ cd peek-reverse-proxy
 cargo install --path .
 ```
 
+#### Docker/Containers
+
+```sh
+docker pull ghcr.io/somehowchris/peek-reverse-proxy:0.1.6
+```
+
 ### Run it
+
+#### Installed binary
 
 Once installed, you can run it via:
 ```sh
 peek-reverse-proxy
 ```
 
-#### Configuration
+##### Configuration
 
 Env variables allow you to configure things to your needs:
 - `HOST_ADDRESS`: address on which to listen on i.e. `0.0.0.0:8080`
@@ -64,4 +79,8 @@ export LOG_LEVEL="normal"
 peek-reverse-proxy
 ```
 
+#### Docker
 
+```sh
+docker run -e HOST_ADDRESS="0.0.0.0:8080" -e DESTINATION_URL="https://www.google.com" -p 8080:8080 ghcr.io/somehowchris/peek-reverse-proxy:0.1.6
+```
