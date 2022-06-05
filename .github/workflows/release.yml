@@ -24,7 +24,6 @@ jobs:
             environment: crates.io
 
         - name: Update deployment status (in_progress)
-          if: success()
           uses: chrnorm/deployment-status@v2
           with:
             token: '${{ github.token }}'
@@ -163,8 +162,34 @@ jobs:
             environment-url: ${{ steps.deployment.outputs.environment_url }}
             deployment-id: ${{ steps.deployment.outputs.deployment_id }}
             state: 'failure'
+  create-binary-deployment:
+    name: Create binary deployment
+    runs-on: ubuntu-latest
+    permissions:
+      deployments: write
+    outputs:
+      environment_url: ${{ steps.deployment.outputs.environment_url }}
+      deployment_id: ${{ steps.deployment.outputs.deployment_id }}
+    steps:
+      - uses: chrnorm/deployment-action@v2
+        name: Create GitHub deployment
+        id: deployment
+        with:
+          token: "${{ github.token }}"
+          log-url: https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
+          environment: gh-release-binaries
+      - name: Update deployment status (in_progress)
+        uses: chrnorm/deployment-status@v2
+        with:
+          token: '${{ github.token }}'
+          environment-url: ${{ steps.deployment.outputs.environment_url }}
+          deployment-id: ${{ steps.deployment.outputs.deployment_id }}
+          state: 'in_progress'
   build-binaries:
+    needs: [create-binary-deployment]
     name: Build binaries
+    permissions:
+      deployments: write
     strategy:
       matrix:
         include:
@@ -232,11 +257,21 @@ jobs:
       with:
         name: peek-reverse-proxy-${{ matrix.target }}
         path: ${{ matrix.output }}
+    - name: Update deployment status (failure)
+      if: failure()
+      uses: chrnorm/deployment-status@v2
+      with:
+        token: '${{ github.token }}'
+        environment-url: ${{ needs.create-binary-deployment.outputs.environment_url }}
+        deployment-id: ${{ needs.create-binary-deployment.outputs.deployment_id }}
+        state: 'failure'
 
   upload-binaries:
     name: Publish binaries
-    needs: [build-binaries]
+    needs: [build-binaries, crates-io, create-binary-deployment]
     runs-on: ubuntu-latest
+    permissions:
+      deployments: write
     strategy:
       matrix:
         target:
@@ -270,4 +305,27 @@ jobs:
         asset_name: peek-reverse-proxy-${{ matrix.target }}.txz
         tag: ${{ github.ref }}
         overwrite: true
+        prerelease: true
+    - name: Update deployment status (failure)
+      if: failure()
+      uses: chrnorm/deployment-status@v2
+      with:
+        token: '${{ github.token }}'
+        environment-url: ${{ needs.create-binary-deployment.outputs.environment_url }}
+        deployment-id: ${{ needs.create-binary-deployment.outputs.deployment_id }}
+        state: 'failure'
+  finish-binary-deployment:
+    needs: [create-binary-deployment, upload-binaries]
+    runs-on: ubuntu-latest
+    permissions:
+      deployments: write
+    steps:
+      - name: Update deployment status (success)
+        if: success()
+        uses: chrnorm/deployment-status@v2
+        with:
+          token: '${{ github.token }}'
+          environment-url: ${{ needs.create-binary-deployment.outputs.environment_url }}
+          deployment-id: ${{ needs.create-binary-deployment.outputs.deployment_id }}
+          state: 'success'
     

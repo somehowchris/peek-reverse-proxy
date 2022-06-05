@@ -1,6 +1,6 @@
 [package]
 name = "peek-reverse-proxy"
-version = "0.1.4"
+version = "0.1.5"
 edition = "2021"
 rust-version = "1.56.0"
 description = "A simple reverse proxy to peek into requests"
@@ -43,3 +43,4 @@ opt-level = 3
 [package.metadata.binstall]
 pkg-url = "{ repo }/releases/download/{ version }/{ name }-{ target }.txz"
 bin-dir = "{ bin }{ binary-ext }"
+pkg-fmt = "txz"
