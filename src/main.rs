@@ -137,6 +137,7 @@ async fn main() {
         _ = proxy => {},
         _ = ctrlc => {
             info!("Received shutdown signal");
+            std::process::exit(0);
         }
     }
 }
