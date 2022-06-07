@@ -117,7 +117,7 @@ jobs:
             tags: ${{ steps.version.outputs.tag }}
 
         - name: Wait for crates.io deployment succeed 
-          uses: lewagon/wait-on-check-action@v1.0.0
+          uses: lewagon/wait-on-check-action@v1.1.1
           with:
             ref: ${{ github.ref }}
             check-name: crates-io
