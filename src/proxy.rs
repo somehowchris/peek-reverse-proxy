@@ -74,13 +74,13 @@ pub async fn handle(
         let query_output = if pretty_json_fields {
             serde_json::to_string_pretty(&query_map).unwrap()
         } else {
-            format!("{:?}", query_map)
+            format!("{query_map:?}")
         };
 
         let headers_output = if pretty_json_fields {
-            serde_json::to_string_pretty(&format!("{:?}", &headers)).unwrap()
+            serde_json::to_string_pretty(&format!("{headers:?}")).unwrap()
         } else {
-            format!("{:?}", headers)
+            format!("{headers:?}")
         };
 
         if format_log_as_json {
@@ -141,9 +141,13 @@ Body: {}
             };
 
             let headers_output = if pretty_json_fields {
-                serde_json::to_string_pretty(&format!("{:?}", &response_parts.0.headers)).unwrap()
+                serde_json::to_string_pretty(&format!(
+                    "{headers:?}",
+                    headers = response_parts.0.headers
+                ))
+                .unwrap()
             } else {
-                format!("{:?}", response_parts.0.headers)
+                format!("{headers:?}", headers = response_parts.0.headers)
             };
 
             if format_log_as_json {

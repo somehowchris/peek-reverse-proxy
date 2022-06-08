@@ -5,7 +5,7 @@ use tracing_subscriber::registry::LookupSpan;
 use tracing_subscriber::EnvFilter;
 use tracing_subscriber::Layer;
 
-#[derive(PartialEq, Clone)]
+#[derive(PartialEq, Eq, Clone)]
 pub enum PrintStyle {
     Pretty,
     Plain,
@@ -47,13 +47,13 @@ pub enum LogLevel {
 
 impl From<&str> for LogLevel {
     fn from(s: &str) -> Self {
-        return match &*s.to_ascii_lowercase() {
+        match &*s.to_ascii_lowercase() {
             "critical" => LogLevel::Critical,
             "normal" => LogLevel::Normal,
             "debug" => LogLevel::Debug,
             "off" => LogLevel::Off,
             _ => panic!("a log level (off, debug, normal, critical)"),
-        };
+        }
     }
 }
 
