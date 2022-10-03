@@ -47,7 +47,7 @@ cargo install --path .
 #### Docker/Containers
 
 ```sh
-docker pull ghcr.io/somehowchris/peek-reverse-proxy:0.1.8
+docker pull ghcr.io/somehowchris/peek-reverse-proxy:0.1.12
 ```
 
 ### Run it
@@ -82,5 +82,5 @@ peek-reverse-proxy
 #### Docker
 
 ```sh
-docker run -e HOST_ADDRESS="0.0.0.0:8080" -e DESTINATION_URL="https://www.google.com" -p 8080:8080 ghcr.io/somehowchris/peek-reverse-proxy:0.1.8
+docker run -e HOST_ADDRESS="0.0.0.0:8080" -e DESTINATION_URL="https://www.google.com" -p 8080:8080 ghcr.io/somehowchris/peek-reverse-proxy:0.1.12
 ```
