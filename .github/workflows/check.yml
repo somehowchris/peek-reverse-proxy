@@ -35,10 +35,10 @@ jobs:
       - uses: Swatinem/rust-cache@v2.0.0
 
       - name: Build Debug
-        run: cargo build --all-features --workspace  --all-targets
+        run: cargo check --all-features --workspace  --all-targets
 
       - name: Build Release
-        run: cargo build --release --all-features --workspace --all-targets
+        run: cargo check --release --all-features --workspace --all-targets
 
   build-cross:
     name: Build for foreign hardware via cross
@@ -69,7 +69,7 @@ jobs:
             arch: aarch64-pc-windows-msvc
           - node: windows-latest
             arch: x86_64-pc-windows-msvc
-          
+
           # apple aarch64
           - node: macos-latest
             arch: aarch64-apple-darwin
@@ -78,7 +78,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3.3.0
-      
       - name: Install
         run: cargo install cross
 
@@ -89,16 +88,16 @@ jobs:
         with:
           toolchain: stable
           override: true
-      
+
       - name: Add target
         run: rustup target add ${{ matrix.config.arch }}
-      
+
       - name: Build Debug
         run: cross build --target ${{ matrix.config.arch }} --all-features --workspace  --all-targets
-      
+
       - name: Build Release
         run: cross build --target ${{ matrix.config.arch }} --all-features --release --workspace  --all-targets
-  
+
   container:
     runs-on: ubuntu-latest
     steps:

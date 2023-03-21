@@ -28,6 +28,3 @@ jobs:
 
       - name: Run clippy
         run: cargo clippy -- --deny=warnings
-
-      - name: Run check
-        run: cargo check
