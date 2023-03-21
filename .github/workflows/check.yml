@@ -91,10 +91,10 @@ jobs:
         run: rustup target add ${{ matrix.config.arch }}
 
       - name: Build Debug
-        run: cross build --target ${{ matrix.config.arch }} --all-features --workspace  --all-targets
+        run: cross check --target ${{ matrix.config.arch }} --all-features --workspace  --all-targets
 
       - name: Build Release
-        run: cross build --target ${{ matrix.config.arch }} --all-features --release --workspace  --all-targets
+        run: cross check --target ${{ matrix.config.arch }} --all-features --release --workspace  --all-targets
 
   container:
     runs-on: ubuntu-latest
