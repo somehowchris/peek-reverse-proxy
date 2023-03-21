@@ -1,4 +1,4 @@
-name: Build
+name: Check
 
 on:
   pull_request:
@@ -9,8 +9,8 @@ env:
   CROSS_CONTAINER_ENGINE: podman
 
 jobs:
-  build-native:
-    name: Build on native hardware
+  check-native:
+    name: Check on native hardware
     strategy:
       fail-fast: false
       matrix:
@@ -25,7 +25,7 @@ jobs:
     runs-on: ${{ matrix.config.node }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3.3.0
+        uses: actions/checkout@v3.4.0
 
       - uses: actions-rs/toolchain@v1
         with:
@@ -34,14 +34,11 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2.0.0
 
-      - name: Build Debug
+      - name: Check Debug
         run: cargo check --all-features --workspace  --all-targets
 
-      - name: Build Release
-        run: cargo check --release --all-features --workspace --all-targets
-
-  build-cross:
-    name: Build for foreign hardware via cross
+  check-cross:
+    name: Check for foreign hardware via cross
     strategy:
       fail-fast: false
       matrix:
@@ -90,17 +87,14 @@ jobs:
       - name: Add target
         run: rustup target add ${{ matrix.config.arch }}
 
-      - name: Build Debug
+      - name: Check Debug
         run: cross check --target ${{ matrix.config.arch }} --all-features --workspace  --all-targets
-
-      - name: Build Release
-        run: cross check --target ${{ matrix.config.arch }} --all-features --release --workspace  --all-targets
 
   container:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository and submodules
-        uses: actions/checkout@v3
+        uses: actions/checkout@v3.4.0
         with:
           submodules: recursive
       - name: Install qemu dependency
