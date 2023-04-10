@@ -83,7 +83,7 @@ jobs:
         # Install the cosign tool except on PR
         # https://github.com/sigstore/cosign-installer
         - name: Install cosign
-          uses: sigstore/cosign-installer@8348525c79cd67509c593a9352954618bdc3a862
+          uses: sigstore/cosign-installer@9e9de2292db7abb3f51b7f4808d98f0d347a8919
 
         - name: Install qemu dependency
           run: |
