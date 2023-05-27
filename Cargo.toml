@@ -12,7 +12,7 @@ repository = "https://github.com/somehowchris/peek-reverse-proxy"
 [dependencies]
 hyper-reverse-proxy = "0.5.1"
 hyper = { version = "0.14.26", features = ["full"] }
-tokio = { version = "1.28.0", features = ["rt-multi-thread", "macros", "signal"] }
+tokio = { version = "1.28.2", features = ["rt-multi-thread", "macros", "signal"] }
 url = "2.3.1"
 tracing = "0.1.37"
 tracing-log = "0.1.3"
