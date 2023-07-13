@@ -1,4 +1,4 @@
-FROM rust:1.69.0-alpine as build
+FROM rust:1.71.0-alpine as build
 
 WORKDIR /src
 
