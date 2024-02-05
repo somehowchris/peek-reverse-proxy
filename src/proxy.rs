@@ -51,7 +51,7 @@ pub async fn handle(
             if !item.is_empty() {
                 let kv = item.split('=').map(|el| el.to_owned()).collect::<Vec<_>>();
                 query_map.insert(
-                    kv.get(0).map(|el| el.to_owned()).unwrap(),
+                    kv.first().map(|el| el.to_owned()).unwrap(),
                     kv.get(1)
                         .map(|el| el.to_owned())
                         .unwrap_or_else(|| "".to_string()),
