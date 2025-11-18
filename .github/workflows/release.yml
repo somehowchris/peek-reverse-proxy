@@ -13,7 +13,7 @@ jobs:
     permissions:
       deployments: write
     steps:
-        - uses: actions/checkout@v4
+        - uses: actions/checkout@v5
 
         - uses: chrnorm/deployment-action@v2
           name: Create GitHub deployment
@@ -68,7 +68,7 @@ jobs:
       id-token: write
       deployments: write
     steps:
-        - uses: actions/checkout@v4
+        - uses: actions/checkout@v5
         - name: Process version of the tag
           id: version
           uses: ncipollo/semantic-version-action@v1
@@ -233,7 +233,7 @@ jobs:
     
     runs-on: ${{ matrix.os }}
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
 
     - name: Configure toolchain
       uses: actions-rs/toolchain@v1
