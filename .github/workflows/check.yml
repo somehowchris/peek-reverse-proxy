@@ -25,7 +25,7 @@ jobs:
     runs-on: ${{ matrix.config.node }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4.1.7
+        uses: actions/checkout@v4.3.1
 
       - uses: actions-rs/toolchain@v1
         with:
@@ -72,7 +72,7 @@ jobs:
     runs-on: ${{ matrix.config.node }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4.1.7
+        uses: actions/checkout@v4.3.1
       - name: Install
         run: cargo install cross
 
@@ -94,7 +94,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository and submodules
-        uses: actions/checkout@v4.1.7
+        uses: actions/checkout@v4.3.1
         with:
           submodules: recursive
       - name: Install qemu dependency
