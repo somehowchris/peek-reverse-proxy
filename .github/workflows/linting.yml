@@ -21,7 +21,7 @@ jobs:
         with:
           toolchain: stable
 
-      - uses: Swatinem/rust-cache@v2.8.1
+      - uses: Swatinem/rust-cache@v2.8.2
 
       - name: Run fmt
         run: cargo fmt -- --check
