@@ -92,7 +92,7 @@ jobs:
 
         # Login against a container registry
         - name: Log into registry ghcr.io
-          uses: redhat-actions/podman-login@v1
+          uses: redhat-actions/podman-login@v2
           with:
             registry: ghcr.io
             username: ${{ github.actor }}
