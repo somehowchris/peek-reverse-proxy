@@ -108,7 +108,7 @@ jobs:
             state: 'in_progress'
         - name: Buildah Action
           id: build-image
-          uses: redhat-actions/buildah-build@v2
+          uses: redhat-actions/buildah-build@v3
           with:
             containerfiles: |
               Containerfile
